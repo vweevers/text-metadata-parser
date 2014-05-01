@@ -1,54 +1,59 @@
 var Wizard = require('weak-type-wizard')
 
 function parseString(text) {
-	var lines = text.split("\n")
-	var done_reading_metadata = false
-	var done_reading_whitespace = false
-	var parsed_object = { content: "", metadata: {} }
+  var lines = text.split("\n")
+    , reading_metadata = false
+    , found_metadata = false
+    , metadata = {}
 
-	for (var i = 0; i < lines.length && !done_reading_whitespace; i++) {
-		if (!done_reading_metadata) {
-			var found_metadata = /^([^:]+):\s*([^\r\n]+)\s*$/.exec(lines[i])
-			if (found_metadata && found_metadata.length === 3) {
-				var property = found_metadata[1].trim()
-				parsed_object.metadata[property] = found_metadata[2]
-			} else if (i === 0) {
-				return { content: text, metadata: {} }
-			} else {
-				done_reading_metadata = true
-			}
-		} else if (!done_reading_whitespace) {
-			done_reading_whitespace = !/^\s*$/.test(lines[i])
-		}
-	}
+  for (var i = 0, l=lines.length; i < l; i++) {
+    
+    if (!reading_metadata) {
+      if (/^[\s-]*$/.test(lines[i])) continue;
+      else if(found_metadata) break;
+    }
 
-	parsed_object.content = lines.slice(i - 1).join("\n")
+    var match = /^([^:]+):\s*([^\r\n]+)\s*$/.exec(lines[i])
+    if (match && match.length === 3) {
+      var property = match[1].trim().toLowerCase()
+      metadata[property] = match[2]
+      reading_metadata = found_metadata = true
+    } else if (!found_metadata) {
+      return { content: text, metadata: {} }
+    } else {
+      reading_metadata = false
+      i-- // To test same line for whitespace
+    }
+  }
 
-	return parsed_object
+  return {
+    content: lines.slice(i).join("\n"),
+    metadata: metadata
+  }
 }
 
 
 function parse(wizard, text) {
-	var post = parseString(text)
-	post.metadata = wizard(post.metadata)
-	return post
+  var post = parseString(text)
+  post.metadata = wizard(post.metadata)
+  return post
 }
 
 function TextMetadataParser(wizard, text, options) {
-	var calledAsAConstructorFunction = typeof text !== 'string'
+  var calledAsAConstructorFunction = typeof text !== 'string'
 
-	if (typeof options === 'undefined' && typeof text !== 'string') {
-		options = text
-	}
+  if (typeof options === 'undefined' && typeof text !== 'string') {
+    options = text
+  }
 
-	var currentWizard = typeof options === 'object' ? wizard.extend(options) : wizard
+  var currentWizard = typeof options === 'object' ? wizard.extend(options) : wizard
 
-	if (calledAsAConstructorFunction) {
-		console.log("Returning a new TMP function with a wizard extended by", options)
-		return TextMetadataParser.bind(null, currentWizard)
-	} else {
-		return parse(currentWizard, text)
-	}
+  if (calledAsAConstructorFunction) {
+    // Return this function, bound to a wizard
+    return TextMetadataParser.bind(null, currentWizard)
+  } else {
+    return parse(currentWizard, text)
+  }
 }
 
 module.exports = TextMetadataParser.bind(null, new Wizard({}))

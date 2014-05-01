@@ -116,3 +116,39 @@ test("whitespace after metadata key", function test(t) {
 
 	t.end()
 })
+
+
+test("dashes before metadata", function test(t) {
+
+  var markdown_string =
+      "---\n"+
+      "   title:    my sweet title\n"
+    + "this is some text"
+
+  var parsed_string = parse(markdown_string, {
+    string: ['title']
+  })
+
+  t.equal(parsed_string.metadata.title, 'my sweet title', 'metadata still parses')
+  t.equal(parsed_string.content, 'this is some text', 'text is parsed')
+
+  t.end()
+})
+
+
+test("dashes after metadata", function test(t) {
+
+  var markdown_string =
+      "title    :    my sweet title\n"
+    + "---\n\n"
+    + "this is some text"
+
+  var parsed_string = parse(markdown_string, {
+    string: ['title']
+  })
+
+  t.equal(parsed_string.metadata.title, 'my sweet title', 'metadata still parses')
+  t.equal(parsed_string.content, 'this is some text', 'text is parsed')
+
+  t.end()
+})
