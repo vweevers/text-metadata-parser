@@ -3,16 +3,18 @@ var Wizard = require('weak-type-wizard')
   , Transform = require('stream').Transform
   , Decoder = require('string_decoder').StringDecoder
   , isStream = require('isstream')
+  , Readable = require('stream').Readable
 
 module.exports = TextMetadataParser()
 
 function TextMetadataParser(wizard, file, options) {
   
-  // Assume file is a virtual file object, or wrap 
-  // it in one, unless nothing valid was given.
+  // Assume file is a vinyl file, or wrap it, 
+  // unless nothing valid was given.
   
-  if (file && file.contents) ; 
-  else if ( typeof file === 'string' || file instanceof String
+  if (file && typeof file.contents !== 'undefined') {
+    var returnStream = true 
+  } else if ( typeof file === 'string' || file instanceof String
         || isStream(file) || file instanceof Buffer) {
     file = { contents: file }
   } else {
@@ -27,14 +29,14 @@ function TextMetadataParser(wizard, file, options) {
 
 
   if (file!==null)
-    return new LineParser(wizard, file) // returns file
+    return new LineParser(wizard, file, returnStream)
   else
     return TextMetadataParser.bind(null, wizard)
 }
 
 require('util').inherits(LineParser, Transform)
 
-function LineParser(wizard, file) {
+function LineParser(wizard, file, returnStream) {
   this.file = file
   this.metadata = {}
   this.wizard = wizard
@@ -45,7 +47,28 @@ function LineParser(wizard, file) {
   // Parsing will start with whitespace
   this.state(parseWhitespace.bind(this, true))
 
-  if (isStream(file.contents)) {
+  var fileIsStream = isStream(file.contents)
+
+  if (returnStream) {
+    this.pause()
+
+    if (!fileIsStream) {
+      var rs = new Readable()
+      var buf = file.contents
+
+      rs._read = function() {
+        this.push(buf)
+        this.push(null)
+      }
+
+      file.contents = rs
+      fileIsStream = true
+    }
+
+    process.nextTick(this.resume.bind(this))
+  }
+
+  if (fileIsStream) {
     var self = this;
 
     // Ensure done() is always called
@@ -72,7 +95,7 @@ function LineParser(wizard, file) {
       : result
   }
 
-  return file
+  return returnStream ? this : file
 }
 
 LineParser.prototype._transform = function(line, enc, callback) {
@@ -90,6 +113,7 @@ LineParser.prototype.done = function(line) {
   }, line)
 
   this.file.metadata = this.wizard(this.metadata)
+  this.emit('metadata', this.file.metadata, this.file)
 
   this.done = function() {}
 }
