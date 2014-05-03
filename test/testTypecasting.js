@@ -21,7 +21,7 @@ test("basic functionality", function(t) {
 	    default: { lovers: 5, bagels: 3}
 	})
 
-	t.equal(result.content, "I leave everything to Janet.\n\n"
+	t.equal(result.contents, "I leave everything to Janet.\n\n"
 		+ "Except my boots.  Those are *mine.*")
 
 	t.equal(result.metadata.lovers, 3, "lovers should be the number 3")
@@ -43,7 +43,7 @@ test("date typecasting", function(t) {
 
 	t.similar(result.metadata.something, new Date(1383181326000), "matching the date constructed from a unix timestamp")
 	t.equal(result.metadata['something else'], "whatever", "string property")
-	t.equal(result.content, "is this real life?\nis this just fantasy", "matching body")
+	t.equal(result.contents, "is this real life?\nis this just fantasy", "matching body")
 
 	t.end()
 })

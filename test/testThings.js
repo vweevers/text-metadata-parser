@@ -28,7 +28,7 @@ test("first generic test", function test(t) {
 	t.equal(parsed_string.metadata.lovers, 3, 'number of lovers')
 	t.equal(parsed_string.metadata.bagels, 3.5, 'default bagels')
 	t.equal(parsed_string.metadata.deceased, true, 'boolean value')
-	t.equal(parsed_string.content,
+	t.equal(parsed_string.contents,
 		  "I leave everything to Janet.\n"
 		+ "\n"
 		+ "Except my boots.  Those are *mine.*")
@@ -48,7 +48,7 @@ test("colon in content, newlines at content end", function test(t) {
 	})
 
 	t.equal(parsed_string.metadata.title, 'my sweet title', 'parse title')
-	t.equal(parsed_string.content, "not_a_value: unreal\n\n", 'newlines preserved')
+	t.equal(parsed_string.contents, "not_a_value: unreal\n\n", 'newlines preserved')
 
 	t.end()
 })
@@ -65,7 +65,7 @@ test("newline versus carriage return", function test(t) {
 	})
 
 	t.equal(parsed_string.metadata.title, 'my sweet title', 'title does not contain newline or carriage return')
-	t.equal(parsed_string.content, "not_a_value: unreal\r\n", 'newline and carriage return preserved')
+	t.equal(parsed_string.contents, "not_a_value: unreal\r\n", 'newline and carriage return preserved')
 
 	t.end()
 })
@@ -81,7 +81,7 @@ test("text is parsed if no newline after metadata", function test(t) {
 	})
 
 	t.equal(parsed_string.metadata.title, 'my sweet title', 'title still parses')
-	t.equal(parsed_string.content, 'this is some text', 'text is parsed')
+	t.equal(parsed_string.contents, 'this is some text', 'text is parsed')
 
 	t.end()
 })
@@ -130,7 +130,7 @@ test("dashes before metadata", function test(t) {
   })
 
   t.equal(parsed_string.metadata.title, 'my sweet title', 'metadata still parses')
-  t.equal(parsed_string.content, 'this is some text', 'text is parsed')
+  t.equal(parsed_string.contents, 'this is some text', 'text is parsed')
 
   t.end()
 })
@@ -148,7 +148,7 @@ test("dashes after metadata", function test(t) {
   })
 
   t.equal(parsed_string.metadata.title, 'my sweet title', 'metadata still parses')
-  t.equal(parsed_string.content, 'this is some text', 'text is parsed')
+  t.equal(parsed_string.contents, 'this is some text', 'text is parsed')
 
   t.end()
 })

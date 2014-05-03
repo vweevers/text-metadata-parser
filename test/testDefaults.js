@@ -23,7 +23,7 @@ test("defaults", function(t) {
 		t.end()
 	})
 	
-	t.equal(result.content, "Who knows!", "matching body")
+	t.equal(result.contents, "Who knows!", "matching body")
 
 	t.end()
 })

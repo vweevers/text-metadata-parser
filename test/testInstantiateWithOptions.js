@@ -42,7 +42,7 @@ test("use the instantiated object more than once", function test(t) {
 
 	var result = myParser(str)
 
-	t.equal(result.content, "I leave everything to Janet.\n\n"
+	t.equal(result.contents, "I leave everything to Janet.\n\n"
 		+ "Except my boots.  Those are *mine.*")
 
 	t.equal(result.metadata.lovers, 3, "lovers should be the number 3")
