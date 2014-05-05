@@ -2,6 +2,18 @@
 
 Metadata parser with [type casting](https://github.com/TehShrike/weak-type-wizard) and support for [gulp](http://gulpjs.com), streams, buffers and strings. This fork of [text-metadata-parser](https://github.com/TehShrike/text-metadata-parser) is not yet published on NPM.
 
+<!-- toc -->
+  * [For gulp](#for-gulp)
+    * [require, map](#require-map)
+    * [Type casting defaults](#type-casting-defaults)
+  * [Standalone usage](#standalone-usage)
+* [Original readme](#original-readme)
+  * [In Node.js](#in-nodejs)
+  * [Parse them strings](#parse-them-strings)
+  * [Todo](#todo)
+  * [License](#license)
+
+<!-- toc stop -->
 ## For gulp
 
 Say you have this text file at `blog/hello.md`:
