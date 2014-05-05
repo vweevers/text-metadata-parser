@@ -18,12 +18,14 @@
     "url": "https://github.com/TehShrike/text-metadata-parser.git"
   },
   "devDependencies": {
-    "tap": "~0.4.4"
+    "tap": "~0.4.4",
+    "gulp-util": "~2.2.14",
+    "moment": "~2.6.0"
   },
   "dependencies": {
     "weak-type-wizard": "^1.0.0",
-    "isstream": "~0.1.0",
-    "event-stream": "~3.1.5"
+    "event-stream": "~3.1.5",
+    "extend": "~1.2.1"
   },
   "directories": {
     "test": "test"

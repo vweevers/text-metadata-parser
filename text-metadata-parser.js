@@ -1,162 +1,35 @@
 var Wizard = require('weak-type-wizard')
-  , es = require('event-stream')
-  , Transform = require('stream').Transform
-  , Decoder = require('string_decoder').StringDecoder
-  , isStream = require('isstream')
-  , Readable = require('stream').Readable
+  , stream = require('stream')
+  , extend = require('extend')
+  , Parser = require('./lib/parser')
+  , FsStream = require('./lib/fs-stream')
 
-module.exports = TextMetadataParser()
+module.exports = Factory()
 
-function TextMetadataParser(wizard, file, options) {
+function Factory(wizard, input, options) {
   
-  // Assume file is a vinyl file, or wrap it, 
-  // unless nothing valid was given.
-  
-  if (file && typeof file.contents !== 'undefined') {
-    var returnStream = true 
-  } else if ( typeof file === 'string' || file instanceof String
-        || isStream(file) || file instanceof Buffer) {
-    file = { contents: file }
+  // If input is given, assume it's a vinyl 
+  // file, or wrap it to look like one
+
+  if (input && typeof input.contents !== 'undefined') ;
+  else if ( typeof input === 'string' 
+    || input instanceof stream.Stream 
+    || Buffer.isBuffer(input)) {
+    input = { contents: input }
   } else {
-    options = file
-    file = null
+    options = input
+    input = null
   }
   
   if (!wizard)
     wizard = new Wizard({})
+
   if (typeof options !== 'undefined')
     wizard = wizard.extend(options || {})
 
+  if (input!==null)
+    return new Parser(wizard, input)
 
-  if (file!==null)
-    return new LineParser(wizard, file, returnStream)
-  else
-    return TextMetadataParser.bind(null, wizard)
-}
-
-require('util').inherits(LineParser, Transform)
-
-function LineParser(wizard, file, returnStream) {
-  this.file = file
-  this.metadata = {}
-  this.wizard = wizard
-  this.decoder = new Decoder()
-
-  Transform.call(this)
-
-  // Parsing will start with whitespace
-  this.state(parseWhitespace.bind(this, true))
-
-  var fileIsStream = isStream(file.contents)
-
-  if (returnStream) {
-    this.pause()
-
-    if (!fileIsStream) {
-      var rs = new Readable()
-      var buf = file.contents
-
-      rs._read = function() {
-        this.push(buf)
-        this.push(null)
-      }
-
-      file.contents = rs
-      fileIsStream = true
-    }
-
-    process.nextTick(this.resume.bind(this))
-  }
-
-  if (fileIsStream) {
-    var self = this;
-
-    // Ensure done() is always called
-    this.on('end', function() {
-      self.done()
-      self.push(self.decoder.end())
-    })
-
-    file.contents = file.contents
-      .pipe(es.split()).pipe(this)
-  } else {
-    // TODO: properly test buffers
-    var isBuffer = Buffer.isBuffer(file.contents)
-      , text = isBuffer ? this.decoder.write(file.contents) : file.contents
-      , result = []
-
-    this.on('data', result.push.bind(result))
-    text.split("\n").forEach(this._transform, this)
-    this.done()
-
-    result = result.join("")
-    file.contents = isBuffer 
-      ? new Buffer(result + this.decoder.end()) 
-      : result
-  }
-
-  return returnStream ? this : file
-}
-
-LineParser.prototype._transform = function(line, enc, callback) {
-  this.parse(this.decoder.write(line))
-  if (typeof callback === 'function' ) callback()
-}
-
-LineParser.prototype.done = function(line) {
-  var first = true;
-
-  this.state(function(line) {
-    if (first) first = false
-    else line = "\n" + line
-    this.push(line)
-  }, line)
-
-  this.file.metadata = this.wizard(this.metadata)
-  this.emit('metadata', this.file.metadata, this.file)
-
-  this.done = function() {}
-}
-
-/**
- * Set state by overriding the "parse" method
- */
-LineParser.prototype.state = function(method, line) {
-  if (method==='done') return this.done(line)
-
-  this.parse = method
-
-  if (typeof line !== 'undefined') 
-    this.parse(line)
-}
-
-function parseWhitespace(leading, line) {
-  if (arguments.length===1) {
-    line = leading
-    leading = false
-  }
-
-  if (!line || /^[\s-]*$/.test(line)) ;
-  else if (leading)
-    this.state(parseMetadata, line)
-  else
-    this.state('done', line)
-}
-
-function parseMetadata(line) {
-  var match = /^([^:]+):\s*([^\r\n]+)\s*$/.exec(line)
-
-  if (match) { //&& match.length === 3) {
-    var property = match[1].trim().toLowerCase()
-    return this.metadata[property] = match[2]
-  }
-
-  // Fake loop to check if we already had
-  // some metadata. If so, test this line 
-  // for whitespace. Else, we're done early.
-  for(var _ in this.metadata) {
-    return this.state(parseWhitespace, line) 
-  }
-
-  this.state('done', line)
+  var factory = Factory.bind(null, wizard)
+  return FsStream.bindToFactory(factory)
 }

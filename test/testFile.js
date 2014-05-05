@@ -1,8 +1,9 @@
 var test = require('tap').test
 var es = require('event-stream')
-var isStream = require('isstream')
+var stream = require('stream')
+var gutil = require('gulp-util')
 
-var parse = require('../')({
+var meta = require('../')({
   number: ['lovers', 'bagels'],
   string: ['title', 'attn'],
   date: ['date'],
@@ -12,7 +13,7 @@ var parse = require('../')({
 
 var markdown_full =
       "---\n"
-    +  "title:    Last will and testament\n"
+    + "title:    Last will and testament\n"
     + "date:     2019-09-13\n"
     + "attn:     Secret Family\n"
     + "lovers:   3\n"
@@ -35,17 +36,32 @@ function commonTest(t, metadata, text) {
   t.equal(metadata.bagels, 3.5, 'default bagels')
   t.equal(metadata.deceased, true, 'boolean value')
   t.equal(text, markdown_body)
+  t.type(meta.fs, 'function', 'fs is available')
   t.end()
 }
 
+test("string", function test(t) {
+  var file = { contents: markdown_full };
+
+  meta(file)
+  t.type(file.contents, 'string', 'returns a string');
+  commonTest(t, file.metadata, file.contents)
+})
+
 test("buffer", function test(t) {
-  var file = parse(new Buffer(markdown_full, 'utf8'));
-  commonTest(t, file.metadata, file.contents.toString());
+  var buf = new Buffer(markdown_full)
+  var file = meta(buf)
+
+  t.ok(Buffer.isBuffer(file.contents), 'returns a buffer');
+  commonTest(t, file.metadata, file.contents.toString())
 })
 
 test("stream", function test(t) {
   var ts = es.through()
-  var file = parse(ts)
+  var file = { contents: ts }
+  meta(file)
+
+  t.ok(file.contents instanceof stream.Stream, 'returns a stream')
 
   file.contents.pipe(es.wait(function(err, text){
     commonTest(t, file.metadata, text)
@@ -55,13 +71,78 @@ test("stream", function test(t) {
   ts.end();
 })
 
-test("returns parser if given a virtual file", function test(t) {
-  var parseStream = parse({ contents: markdown_full })
+test("stream with event", function test(t) {
+  var ts = es.through()
+  var file = meta(ts)
 
-  t.ok(isStream(parseStream), 'is a stream')
-  
-  parseStream.on('metadata', function(metadata, file){
-    t.equal(metadata.title, 'Last will and testament', 'emits metadata event')
+  file.ready(function(metadata, file){
+    t.equal(metadata.title, 'Last will and testament', 'emits event')
     t.end()
   })
+
+  ts.write(markdown_full);
+  ts.end();
+})
+
+test("string with event", function test(t) {
+  var file = meta(markdown_full)
+
+  file.ready(function(metadata, file){
+    t.equal(metadata.title, 'Last will and testament', 'emits event')
+    t.end()
+  })
+})
+
+test("let's try moment.js", function test(t) {
+  var moment = require('moment')
+    , date = '2013-02-08 09:30'  // ISO-8601 string
+    , format = 'YYYY-MM-DD HH:mm'
+    
+  var file = meta('date: '+ date, {
+    moment: ['date'],
+    cast: { moment: moment }
+  }) 
+
+  var formatted = file.metadata.date.format(format);
+
+  t.equal(formatted, date, 'casts date to moment')
+  t.end()
+})
+
+test("gulp friendly stream", function test(t) {
+  var gulpFriendly = meta.fs()
+    .require(['title'], 'ignore')
+    .map(function(data, file) {
+      data.slug = data.title.replace(/ /g, '-').toLowerCase()
+    })
+
+  gulpFriendly
+    .pipe(meta.map(function(data){
+      data.extra = 23
+    }))
+    .pipe(meta.require('extra'))
+    
+    .on('data', function (file) {
+      t.equal(file.metadata.title, 'Last will and testament', 'has metadata')
+      t.equal(file.metadata.lovers, 3, 'keeps options')
+      t.equal(file.metadata.slug, 'last-will-and-testament', 'has slug')
+      t.equal(file.metadata.extra, 23, 'mapstream ok')
+      
+      file.contents.pipe(es.wait(function(err, text){
+        t.equal(text, markdown_body, 'has content')
+        t.end()
+      }))
+    })
+
+  var ts = es.through()
+
+  gulpFriendly.write(new gutil.File({
+    contents: ts
+  }))
+
+  gulpFriendly.write(new gutil.File({
+    contents: new Buffer('this file is: ignored')
+  }))
+
+  ts.end(markdown_full)
 })
