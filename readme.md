@@ -1,6 +1,6 @@
 # text-metadata-parser
 
-Metadata parser with [type casting](https://github.com/TehShrike/weak-type-wizard) and support for [gulp](http://gulpjs.com), streams, buffers and strings. This fork is not yet published on NPM.
+Metadata parser with [type casting](https://github.com/TehShrike/weak-type-wizard) and support for [gulp](http://gulpjs.com), streams, buffers and strings. This fork of [text-metadata-parser](https://github.com/TehShrike/text-metadata-parser) is not yet published on NPM.
 
 ## For gulp
 
