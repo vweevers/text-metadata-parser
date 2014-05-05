@@ -1,4 +1,8 @@
-Metadata parser with type casting and support for gulp, streams, buffers and strings.
+# text-metadata-parser
+
+Metadata parser with [type casting](https://github.com/TehShrike/weak-type-wizard) and support for [gulp](http://gulpjs.com), streams, buffers and strings. This fork is not yet published on NPM.
+
+## For gulp
 
 Say you have this text file at `blog/hello.md`:
 
@@ -13,7 +17,7 @@ date: 2014-02-08 09:30
 The dashes around the metadata block are *optional*. Some more markdown text..
 ```
 
-And you want to render that to `public/2014/02/08/a-blog-post.html`. 
+And you want to render that to `public/2014/02/08/a-blog-post.html` with a `gulp` task. 
 
 ```javascript
 var meta = require('text-metadata-parser')
