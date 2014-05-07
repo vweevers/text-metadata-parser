@@ -152,3 +152,22 @@ test("gulp friendly stream", function test(t) {
 
   ts.end(markdown_full)
 })
+
+test("file.clone", function test(t) {
+  var stream = meta.fs()
+
+  stream
+    .pipe(es.map(function(file, done){
+      var cloned = file.clone().clone()
+      done(null, cloned)
+    }))
+    
+    .on('data', function (file) {
+      t.equal(file.metadata.title, 'Last will and testament', 'has metadata')
+      t.end()
+    })
+
+  stream.write(new gutil.File({
+    contents: new Buffer(markdown_full)
+  }))
+})
