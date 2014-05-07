@@ -26,7 +26,8 @@
   "dependencies": {
     "weak-type-wizard": "^1.0.0",
     "event-stream": "~3.1.5",
-    "extend": "~1.2.1"
+    "extend": "~1.2.1",
+    "tap-object-stream": "~0.0.2"
   },
   "directories": {
     "test": "test"

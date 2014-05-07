@@ -15,6 +15,7 @@ function Factory(wizard, input, options) {
   else if ( typeof input === 'string' 
     || input instanceof stream.Stream 
     || Buffer.isBuffer(input)) {
+    var wrapped = true
     input = { contents: input }
   } else {
     options = input
@@ -27,8 +28,18 @@ function Factory(wizard, input, options) {
   if (typeof options !== 'undefined')
     wizard = wizard.extend(options || {})
 
-  if (input!==null)
-    return new Parser(wizard, input)
+  if (input!==null) {
+    var parserStream = new Parser(wizard, input)
+    if (wrapped) {
+      parserStream.on('error', function(err){
+        throw err
+      })
+
+      return input
+    } else {
+      return parserStream;
+    }
+  }
 
   var factory = Factory.bind(null, wizard)
   return FsStream.bindToFactory(factory)

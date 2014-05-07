@@ -73,9 +73,9 @@ test("stream", function test(t) {
 
 test("stream with event", function test(t) {
   var ts = es.through()
-  var file = meta(ts)
+  var file = { contents: ts }
 
-  file.ready(function(metadata, file){
+  meta(file).on('metadata', function(metadata, file){
     t.equal(metadata.title, 'Last will and testament', 'emits event')
     t.end()
   })
@@ -85,9 +85,9 @@ test("stream with event", function test(t) {
 })
 
 test("string with event", function test(t) {
-  var file = meta(markdown_full)
+  var file = { contents: markdown_full }
 
-  file.ready(function(metadata, file){
+  meta(file).on('metadata', function(metadata, file){
     t.equal(metadata.title, 'Last will and testament', 'emits event')
     t.end()
   })
@@ -111,21 +111,27 @@ test("let's try moment.js", function test(t) {
 
 test("gulp friendly stream", function test(t) {
   var gulpFriendly = meta.fs()
-    .require(['title'], 'ignore')
-    .map(function(data, file) {
-      data.slug = data.title.replace(/ /g, '-').toLowerCase()
+
+    // returns meta.fs stream
+    .tap(function(slug, title, done){
+      if (!title) done.exclude()
+      else done(title.replace(/ /g, '-').toLowerCase())
+    })
+
+    // Chainable
+    .tap(function(slug){
+      return slug + '-2'
     })
 
   gulpFriendly
-    .pipe(meta.map(function(data){
-      data.extra = 23
+    .pipe(meta.tap(function(extra){
+      return 23
     }))
-    .pipe(meta.require('extra'))
     
     .on('data', function (file) {
       t.equal(file.metadata.title, 'Last will and testament', 'has metadata')
       t.equal(file.metadata.lovers, 3, 'keeps options')
-      t.equal(file.metadata.slug, 'last-will-and-testament', 'has slug')
+      t.equal(file.metadata.slug, 'last-will-and-testament-2', 'has slug')
       t.equal(file.metadata.extra, 23, 'mapstream ok')
       
       file.contents.pipe(es.wait(function(err, text){

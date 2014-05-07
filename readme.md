@@ -29,7 +29,7 @@ And you want to render that to `public/2014/02/08/a-blog-post.html` with a `gulp
 ```javascript
 var meta = require('text-metadata-parser')
   , moment = require('moment')
-  , slug = require('slug')
+  , uslug = require('slug')
   , rename = require('gulp-rename')
   , markdown = require('gulp-markdown')
 
@@ -41,9 +41,17 @@ gulp.src('blog/**/*.md')
       moment: ['date'],
       cast: { moment: moment }
     })
-    .require(['title', 'date'])
-    .map(function(data) {
-      data.slug = slug(data.title).toLowerCase()
+
+    // Shortcut to the tap-object-stream module
+    .tap(function(slug, title, date, done){
+      // Require a title and date, generate slug
+      if (title && date) done(uslug(title).toLowerCase())
+      else done.exclude()
+    })
+
+    // It's chainable and returns the original (meta.fs) stream
+    .tap(function(someotherproperty){
+      return 'foobar'
     })
   )
 
@@ -51,6 +59,7 @@ gulp.src('blog/**/*.md')
   // metadata is parsed.
   
   .pipe(rename(function(path, file){
+    console.log(file.metadata.someotherproperty) // "foobar"!
     path.dirname+= file.metadata.date.format('/YYYY/MM/DD')
     path.basename = file.metadata.slug
   }))
@@ -61,15 +70,12 @@ gulp.src('blog/**/*.md')
   .pipe(gulp.dest('public'))
 ```
 
-### require, map
+### tap
 
-1) You can also use `require` and `map` as standalone streams. 2) By default, `require` dismisses files that don't have the specified metadata properties. To stop streaming, pass 'error' as an argument.
+The tap method is a shortcut to
+`stream.pipe(tap('metadata', function(title){ .. }))`
 
-```javascript
-.pipe(meta())
-.pipe(meta.require(['title', 'date'], 'error'))
-.pipe(meta.map(function(){ /* */ }))
-```
+For more examples, see [tap-object-stream](https://github.com/vweevers/tap-object-stream).
 
 ### Type casting defaults
 
@@ -113,6 +119,8 @@ another = meta.fs({
 
 ## Standalone usage
 
+Note. The API is too ambiguous. Likely to remove all this.
+
 ```javascript
 var meta = require('text-metadata-parser')({
   string:  [ 'title', 'author' ],
@@ -128,10 +136,9 @@ console.log(file.metadata, file.contents)
 
 // Stream
 var ts = require('event-stream').through()
-var file = meta(ts)
+var file = { contents: ts }
 
-file.ready(function(metadata, file){
-  // Called when metadata is parsed
+meta(file).on('metadata', function(metadata, file){
   console.log(metadata)
 })
 
