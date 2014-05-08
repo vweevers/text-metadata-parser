@@ -171,3 +171,17 @@ test("file.clone", function test(t) {
     contents: new Buffer(markdown_full)
   }))
 })
+
+test("default options", function test(t) {
+  var gulpFriendly = require('../').fs()
+
+  gulpFriendly    
+    .on('data', function (file) {
+      t.deepEqual(file.metadata.tags, ['foo', 'bar', 'baz'], 'tags parsed')
+      t.end()
+    })
+
+  gulpFriendly.write(new gutil.File({
+    contents: new Buffer('tags: foo, bar, baz')
+  }))
+})
